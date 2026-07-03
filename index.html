@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lua VM 混淆器</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <main class="container">
+    <section class="hero">
+      <div>
+        <h1>Lua VM 混淆器</h1>
+        <p>
+          把 Lua 程式轉成 VM Loader 混淆版本。輸出不使用 Lua 二進位 bytecode，
+          比較不容易因不同設備或不同 Lua 版本翻譯出錯。
+        </p>
+      </div>
+
+      <div class="badge">Lua VM Obfuscator</div>
+    </section>
+
+    <section class="content">
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>原始 Lua</h2>
+            <button class="ghost-btn" id="sampleBtn">放入範例</button>
+          </div>
+
+          <textarea id="inputLua" spellcheck="false" placeholder="把你的 Lua 程式貼到這裡"></textarea>
+
+          <div class="button-row">
+            <button id="obfuscateBtn">開始 VM 混淆</button>
+            <button class="ghost-btn" id="clearBtn">清空</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>混淆結果</h2>
+            <span id="statusText">等待輸入</span>
+          </div>
+
+          <textarea id="outputLua" spellcheck="false" readonly placeholder="混淆後的 Lua 會出現在這裡"></textarea>
+
+          <div class="button-row">
+            <button id="copyBtn">複製結果</button>
+            <button class="soft-btn" id="downloadBtn">下載 .lua</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="info-grid">
+        <div class="info-box">
+          <h3>這版比較穩的原因</h3>
+          <p>
+            不用 <code>string.dump</code>、不用 bytecode、不要 <code>bit32</code>、
+            不用 <code>utf8</code>。原始碼會先轉成 UTF-8 bytes，再變成 VM 數字指令。
+          </p>
+        </div>
+
+        <div class="info-box">
+          <h3>限制</h3>
+          <p>
+            執行環境需要支援 <code>loadstring</code> 或 <code>load</code>。
+            如果平台完全禁用動態載入，這種混淆就不能執行。
+          </p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">已複製</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
