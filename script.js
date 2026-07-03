@@ -6,10 +6,15 @@ const obfuscateBtn = document.getElementById("obfuscateBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const resetBtn = document.getElementById("resetBtn");
 
+const basicOption = document.getElementById("basicOption");
+const strongOption = document.getElementById("strongOption");
+const trapOption = document.getElementById("trapOption");
+
 const statusText = document.getElementById("statusText");
 const progressBar = document.getElementById("progressBar");
 const inputSize = document.getElementById("inputSize");
 const outputSize = document.getElementById("outputSize");
+const levelText = document.getElementById("levelText");
 const previewText = document.getElementById("previewText");
 const toast = document.getElementById("toast");
 
@@ -55,6 +60,21 @@ function resetOutput() {
   setProgress(0);
 }
 
+function updateLevelText() {
+  const strong = strongOption.checked;
+  const trap = trapOption.checked;
+
+  if (strong && trap) {
+    levelText.textContent = "高強度 + 陷阱";
+  } else if (strong) {
+    levelText.textContent = "高強度";
+  } else if (trap) {
+    levelText.textContent = "基礎 + 陷阱";
+  } else {
+    levelText.textContent = "基礎";
+  }
+}
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -76,6 +96,24 @@ function randomName(used, length = 11) {
   }
 }
 
+function makeFakeProgram(count, opByte, opRun) {
+  const fake = [];
+
+  for (let i = 0; i < count; i++) {
+    const fakeOp = randomInt(30, 220);
+
+    if (fakeOp === opByte || fakeOp === opRun) {
+      fake.push(fakeOp + 300);
+    } else {
+      fake.push(fakeOp);
+    }
+
+    fake.push(randomInt(0, 255));
+  }
+
+  return fake;
+}
+
 async function makeProgramText(numbers, perLine = 18) {
   const lines = [];
 
@@ -92,7 +130,35 @@ async function makeProgramText(numbers, perLine = 18) {
   return lines.join("\n");
 }
 
-async function makeObfuscatedLua(sourceText) {
+function buildTrapBlock(used) {
+  const trapName = randomName(used);
+  const fakeTable = randomName(used);
+  const fakeIndex = randomName(used);
+  const fakeSum = randomName(used);
+
+  const values = [];
+
+  for (let i = 0; i < 40; i++) {
+    values.push(randomInt(10, 999));
+  }
+
+  return `
+local ${fakeTable} = {${values.join(", ")}}
+local function ${trapName}()
+  local ${fakeSum} = 0
+  for ${fakeIndex} = 1, #${fakeTable} do
+    ${fakeSum} = (${fakeSum} + ${fakeTable}[${fakeIndex}] * ${fakeIndex}) % 9973
+  end
+  if ${fakeSum} == -1 then
+    error("VM trap")
+  end
+end
+
+${trapName}()
+`;
+}
+
+async function makeObfuscatedLua(sourceText, options) {
   statusText.textContent = "正在轉成 UTF-8 bytes...";
   setProgress(15);
   await sleep(0);
@@ -122,13 +188,30 @@ async function makeObfuscatedLua(sourceText) {
 
   const key = randomInt(1, 255);
   const step = randomInt(3, 250);
-  const program = new Array(bytes.length * 2 + 1);
+
+  const strongKeyA = randomInt(1, 255);
+  const strongKeyB = randomInt(1, 255);
+  const strongKeyC = randomInt(1, 255);
+
+  let extraFakeCount = 0;
+
+  if (options.strong) {
+    extraFakeCount += Math.min(300, Math.max(30, Math.floor(bytes.length / 80)));
+  }
+
+  if (options.trap) {
+    extraFakeCount += Math.min(500, Math.max(50, Math.floor(bytes.length / 60)));
+  }
+
+  const program = [];
 
   statusText.textContent = "正在建立 VM 指令...";
   setProgress(25);
   await sleep(0);
 
-  let p = 0;
+  if (options.trap) {
+    program.push(...makeFakeProgram(randomInt(20, 60), opByte, opRun));
+  }
 
   for (let i = 0; i < bytes.length; i++) {
     if (i % 8000 === 0) {
@@ -137,12 +220,26 @@ async function makeObfuscatedLua(sourceText) {
     }
 
     const index = i + 1;
-    const encrypted = (bytes[i] + key + ((index * step) % 251)) % 256;
-    program[p++] = opByte;
-    program[p++] = encrypted;
+    let encrypted = (bytes[i] + key + ((index * step) % 251)) % 256;
+
+    if (options.strong) {
+      encrypted = (encrypted + strongKeyA) % 256;
+      encrypted = (encrypted * 3 + strongKeyB) % 256;
+      encrypted = (encrypted + ((index * strongKeyC) % 253)) % 256;
+    }
+
+    if (options.trap && i % randomInt(17, 31) === 0) {
+      program.push(...makeFakeProgram(randomInt(1, 3), opByte, opRun));
+    }
+
+    program.push(opByte, encrypted);
   }
 
-  program[p] = opRun;
+  if (options.trap) {
+    program.push(...makeFakeProgram(extraFakeCount, opByte, opRun));
+  }
+
+  program.push(opRun);
 
   const programText = await makeProgramText(program);
 
@@ -150,12 +247,39 @@ async function makeObfuscatedLua(sourceText) {
   setProgress(90);
   await sleep(0);
 
+  let trapBlock = "";
+
+  if (options.trap) {
+    trapBlock = buildTrapBlock(used);
+  }
+
+  let decodeBody;
+
+  if (options.strong) {
+    decodeBody = `  ${nValue} = (${nValue} - (( ${nCount} * ${strongKeyC}) % 253)) % 256
+  ${nValue} = ((${nValue} - ${strongKeyB}) * 171) % 256
+  ${nValue} = (${nValue} - ${strongKeyA}) % 256
+  return (${nValue} - ${key} - ((${nCount} * ${step}) % 251)) % 256`;
+  } else {
+    decodeBody = `  return (${nValue} - ${key} - ((${nCount} * ${step}) % 251)) % 256`;
+  }
+
+  const commentLevel = options.strong && options.trap
+    ? "Level: High + Trap"
+    : options.strong
+      ? "Level: High"
+      : options.trap
+        ? "Level: Basic + Trap"
+        : "Level: Basic";
+
   return `--[[
 Portable Lua VM Obfuscator Output
+${commentLevel}
 No bytecode / No string.dump / No bit32 / No utf8 library
 Requirement: loadstring or load
 ]]
 
+${trapBlock}
 local ${nProgram} = {
 ${programText}
 }
@@ -165,7 +289,7 @@ local ${nOut} = {}
 local ${nCount} = 0
 
 local function ${nDecode}(${nValue}, ${nCount})
-  return (${nValue} - ${key} - ((${nCount} * ${step}) % 251)) % 256
+${decodeBody}
 end
 
 while true do
@@ -198,7 +322,7 @@ while true do
     return ${nFn}()
 
   else
-    error("VM error: invalid opcode")
+    -- fake or trap opcode, skipped safely
   end
 end
 `;
@@ -250,7 +374,13 @@ obfuscateBtn.addEventListener("click", async () => {
       return;
     }
 
-    const output = await makeObfuscatedLua(sourceText);
+    const options = {
+      basic: true,
+      strong: strongOption.checked,
+      trap: trapOption.checked
+    };
+
+    const output = await makeObfuscatedLua(sourceText, options);
 
     outputBlob = new Blob([output], { type: "text/plain;charset=utf-8" });
     outputSize.textContent = formatBytes(outputBlob.size);
@@ -300,6 +430,13 @@ resetBtn.addEventListener("click", () => {
   inputSize.textContent = "0 KB";
   obfuscateBtn.disabled = true;
   statusText.textContent = "等待導入檔案";
+  strongOption.checked = false;
+  trapOption.checked = false;
+  updateLevelText();
   resetOutput();
   showToast("已重設");
 });
+
+strongOption.addEventListener("change", updateLevelText);
+trapOption.addEventListener("change", updateLevelText);
+updateLevelText();

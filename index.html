@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lua VM 混淆器</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 
 <body>
@@ -13,11 +13,11 @@
       <div>
         <h1>Lua VM 混淆器</h1>
         <p>
-          導入 Lua 檔案後直接混淆並下載結果。這版不用 Worker，所以直接用本機檔案開啟也能跑。
+          導入 Lua 檔案後混淆並下載結果。可勾選基礎、高強度、陷阱混淆。
         </p>
       </div>
 
-      <div class="badge">Local File Version</div>
+      <div class="badge">Levels Version</div>
     </section>
 
     <section class="content">
@@ -34,6 +34,34 @@
         </label>
 
         <input id="fileInput" type="file" accept=".lua,.txt,text/plain" />
+
+        <div class="option-card">
+          <h3>混淆選項</h3>
+
+          <label class="check-row">
+            <input type="checkbox" id="basicOption" checked disabled />
+            <span>
+              <strong>基礎 VM 混淆</strong>
+              <small>把原始 Lua 轉成 VM 數字指令，保持比較好的相容性。</small>
+            </span>
+          </label>
+
+          <label class="check-row">
+            <input type="checkbox" id="strongOption" />
+            <span>
+              <strong>高強度混淆</strong>
+              <small>增加二次數字變形、變數亂名、額外計算流程，輸出會更長。</small>
+            </span>
+          </label>
+
+          <label class="check-row">
+            <input type="checkbox" id="trapOption" />
+            <span>
+              <strong>陷阱混淆</strong>
+              <small>加入假指令、假資料、無效分支，讓閱讀更混亂，但不影響正常執行。</small>
+            </span>
+          </label>
+        </div>
 
         <div class="button-row">
           <button id="obfuscateBtn" disabled>開始 VM 混淆</button>
@@ -64,8 +92,8 @@
           </div>
 
           <div class="stat">
-            <span>處理方式</span>
-            <strong>分段處理</strong>
+            <span>目前強度</span>
+            <strong id="levelText">基礎</strong>
           </div>
         </div>
 
@@ -77,10 +105,10 @@
 
       <section class="info-grid">
         <div class="info-box">
-          <h3>這版修正了什麼？</h3>
+          <h3>建議怎麼選？</h3>
           <p>
-            舊版使用 <code>worker.js</code>，用本機 <code>file://</code> 開啟會被瀏覽器擋掉。
-            這版不用 Worker，所以下載後直接開 <code>index.html</code> 也能用。
+            想穩定就只用基礎。想比較難看懂就開高強度。
+            陷阱會讓檔案更亂、更大，測試沒問題再使用。
           </p>
         </div>
 
@@ -96,6 +124,6 @@
 
   <div class="toast" id="toast">完成</div>
 
-  <script src="script.js?v=5"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>
