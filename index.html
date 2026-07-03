@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lua VM 混淆器</title>
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 
 <body>
@@ -13,17 +13,17 @@
       <div>
         <h1>Lua VM 混淆器</h1>
         <p>
-          這版改成「導入 Lua 檔案 → 混淆 → 下載結果」，不再把超長程式碼顯示在網頁上，避免瀏覽器卡住。
+          導入 Lua 檔案後直接混淆並下載結果。這版不用 Worker，所以直接用本機檔案開啟也能跑。
         </p>
       </div>
 
-      <div class="badge">File Mode</div>
+      <div class="badge">Local File Version</div>
     </section>
 
     <section class="content">
       <section class="upload-card">
         <h2>導入 Lua 檔案</h2>
-        <p>選擇 <code>.lua</code> 或 <code>.txt</code> 檔案，系統會在背景執行混淆。</p>
+        <p>選擇 <code>.lua</code> 或 <code>.txt</code> 檔案，混淆完成後下載輸出檔。</p>
 
         <label class="file-box" for="fileInput">
           <div class="file-icon">📄</div>
@@ -65,7 +65,7 @@
 
           <div class="stat">
             <span>處理方式</span>
-            <strong>背景 Worker</strong>
+            <strong>分段處理</strong>
           </div>
         </div>
 
@@ -77,18 +77,17 @@
 
       <section class="info-grid">
         <div class="info-box">
-          <h3>為什麼比較不會當？</h3>
+          <h3>這版修正了什麼？</h3>
           <p>
-            舊版會把超長混淆結果塞進文字框，瀏覽器容易卡住。
-            這版只建立下載檔案，畫面只顯示小段預覽。
+            舊版使用 <code>worker.js</code>，用本機 <code>file://</code> 開啟會被瀏覽器擋掉。
+            這版不用 Worker，所以下載後直接開 <code>index.html</code> 也能用。
           </p>
         </div>
 
         <div class="info-box">
           <h3>執行限制</h3>
           <p>
-            混淆後的 Lua 還是需要目標環境支援 <code>loadstring</code> 或 <code>load</code>。
-            如果平台完全禁止動態載入，就不能執行。
+            混淆後的 Lua 仍需要目標環境支援 <code>loadstring</code> 或 <code>load</code>。
           </p>
         </div>
       </section>
@@ -97,6 +96,6 @@
 
   <div class="toast" id="toast">完成</div>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>

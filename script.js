@@ -16,7 +16,17 @@ const toast = document.getElementById("toast");
 let selectedFile = null;
 let outputBlob = null;
 let outputFileName = "output_obfuscated.lua";
-let worker = null;
+let isRunning = false;
+
+const LUA_RESERVED = new Set([
+  "and", "break", "do", "else", "elseif", "end", "false", "for", "function",
+  "goto", "if", "in", "local", "nil", "not", "or", "repeat", "return",
+  "then", "true", "until", "while"
+]);
+
+function sleep(ms = 0) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function showToast(text) {
   toast.textContent = text;
@@ -45,6 +55,155 @@ function resetOutput() {
   setProgress(0);
 }
 
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomName(used, length = 11) {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  while (true) {
+    let name = "_";
+
+    for (let i = 0; i < length; i++) {
+      name += chars[randomInt(0, chars.length - 1)];
+    }
+
+    if (!used.has(name) && !LUA_RESERVED.has(name)) {
+      used.add(name);
+      return name;
+    }
+  }
+}
+
+async function makeProgramText(numbers, perLine = 18) {
+  const lines = [];
+
+  for (let i = 0; i < numbers.length; i += perLine) {
+    if (i % 12000 === 0) {
+      setProgress(55 + Math.min(30, Math.floor((i / Math.max(numbers.length, 1)) * 30)));
+      statusText.textContent = "正在建立輸出內容...";
+      await sleep(0);
+    }
+
+    lines.push("  " + numbers.slice(i, i + perLine).join(", ") + ",");
+  }
+
+  return lines.join("\n");
+}
+
+async function makeObfuscatedLua(sourceText) {
+  statusText.textContent = "正在轉成 UTF-8 bytes...";
+  setProgress(15);
+  await sleep(0);
+
+  const bytes = new TextEncoder().encode(sourceText);
+  const used = new Set();
+
+  const nProgram = randomName(used);
+  const nIp = randomName(used);
+  const nOp = randomName(used);
+  const nOut = randomName(used);
+  const nCount = randomName(used);
+  const nValue = randomName(used);
+  const nByte = randomName(used);
+  const nSrc = randomName(used);
+  const nLoader = randomName(used);
+  const nFn = randomName(used);
+  const nErr = randomName(used);
+  const nDecode = randomName(used);
+
+  const opByte = randomInt(30, 220);
+  let opRun = randomInt(30, 220);
+
+  while (opRun === opByte) {
+    opRun = randomInt(30, 220);
+  }
+
+  const key = randomInt(1, 255);
+  const step = randomInt(3, 250);
+  const program = new Array(bytes.length * 2 + 1);
+
+  statusText.textContent = "正在建立 VM 指令...";
+  setProgress(25);
+  await sleep(0);
+
+  let p = 0;
+
+  for (let i = 0; i < bytes.length; i++) {
+    if (i % 8000 === 0) {
+      setProgress(25 + Math.min(30, Math.floor((i / Math.max(bytes.length, 1)) * 30)));
+      await sleep(0);
+    }
+
+    const index = i + 1;
+    const encrypted = (bytes[i] + key + ((index * step) % 251)) % 256;
+    program[p++] = opByte;
+    program[p++] = encrypted;
+  }
+
+  program[p] = opRun;
+
+  const programText = await makeProgramText(program);
+
+  statusText.textContent = "正在封裝 Lua Loader...";
+  setProgress(90);
+  await sleep(0);
+
+  return `--[[
+Portable Lua VM Obfuscator Output
+No bytecode / No string.dump / No bit32 / No utf8 library
+Requirement: loadstring or load
+]]
+
+local ${nProgram} = {
+${programText}
+}
+
+local ${nIp} = 1
+local ${nOut} = {}
+local ${nCount} = 0
+
+local function ${nDecode}(${nValue}, ${nCount})
+  return (${nValue} - ${key} - ((${nCount} * ${step}) % 251)) % 256
+end
+
+while true do
+  local ${nOp} = ${nProgram}[${nIp}]
+  ${nIp} = ${nIp} + 1
+
+  if ${nOp} == ${opByte} then
+    local ${nValue} = ${nProgram}[${nIp}]
+    ${nIp} = ${nIp} + 1
+
+    ${nCount} = ${nCount} + 1
+    local ${nByte} = ${nDecode}(${nValue}, ${nCount})
+
+    ${nOut}[#${nOut} + 1] = string.char(${nByte})
+
+  elseif ${nOp} == ${opRun} then
+    local ${nSrc} = table.concat(${nOut})
+    local ${nLoader} = loadstring or load
+
+    if not ${nLoader} then
+      error("This Lua environment does not support loadstring or load.")
+    end
+
+    local ${nFn}, ${nErr} = ${nLoader}(${nSrc})
+
+    if not ${nFn} then
+      error(${nErr})
+    end
+
+    return ${nFn}()
+
+  else
+    error("VM error: invalid opcode")
+  end
+end
+`;
+}
+
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
 
@@ -69,89 +228,45 @@ fileInput.addEventListener("change", () => {
 });
 
 obfuscateBtn.addEventListener("click", async () => {
-  if (!selectedFile) {
-    showToast("請先選擇檔案");
+  if (!selectedFile || isRunning) {
     return;
   }
 
   resetOutput();
-
+  isRunning = true;
   obfuscateBtn.disabled = true;
-  statusText.textContent = "正在讀取檔案...";
-  setProgress(5);
+  downloadBtn.disabled = true;
 
   try {
+    statusText.textContent = "正在讀取檔案...";
+    setProgress(5);
+    await sleep(0);
+
     const sourceText = await selectedFile.text();
 
     if (!sourceText.trim()) {
       statusText.textContent = "檔案是空的";
       showToast("檔案是空的");
-      obfuscateBtn.disabled = false;
       return;
     }
 
-    statusText.textContent = "正在背景混淆...";
-    setProgress(15);
+    const output = await makeObfuscatedLua(sourceText);
 
-    if (worker) {
-      worker.terminate();
-    }
-
-    worker = new Worker("worker.js?v=4");
-
-    worker.onmessage = (event) => {
-      const data = event.data;
-
-      if (data.type === "progress") {
-        statusText.textContent = data.message;
-        setProgress(data.progress);
-      }
-
-      if (data.type === "done") {
-        outputBlob = new Blob([data.output], { type: "text/plain;charset=utf-8" });
-        outputSize.textContent = formatBytes(outputBlob.size);
-        previewText.textContent = data.output.slice(0, 2500) + (data.output.length > 2500 ? "\n\n...預覽結束，完整內容請下載..." : "");
-        downloadBtn.disabled = false;
-        obfuscateBtn.disabled = false;
-        statusText.textContent = "混淆完成，可以下載";
-        setProgress(100);
-        showToast("混淆完成");
-        worker.terminate();
-        worker = null;
-      }
-
-      if (data.type === "error") {
-        statusText.textContent = "混淆失敗";
-        previewText.textContent = data.message;
-        obfuscateBtn.disabled = false;
-        setProgress(0);
-        showToast("混淆失敗");
-        worker.terminate();
-        worker = null;
-      }
-    };
-
-    worker.onerror = (error) => {
-      statusText.textContent = "Worker 發生錯誤";
-      previewText.textContent = error.message || "未知錯誤";
-      obfuscateBtn.disabled = false;
-      setProgress(0);
-      showToast("混淆失敗");
-      if (worker) {
-        worker.terminate();
-        worker = null;
-      }
-    };
-
-    worker.postMessage({
-      type: "obfuscate",
-      sourceText
-    });
+    outputBlob = new Blob([output], { type: "text/plain;charset=utf-8" });
+    outputSize.textContent = formatBytes(outputBlob.size);
+    previewText.textContent = output.slice(0, 2500) + (output.length > 2500 ? "\n\n...預覽結束，完整內容請下載..." : "");
+    downloadBtn.disabled = false;
+    statusText.textContent = "混淆完成，可以下載";
+    setProgress(100);
+    showToast("混淆完成");
   } catch (error) {
-    statusText.textContent = "讀取失敗";
-    previewText.textContent = error.message || "讀取檔案失敗";
-    obfuscateBtn.disabled = false;
+    statusText.textContent = "混淆失敗";
+    previewText.textContent = error.message || String(error);
     setProgress(0);
+    showToast("混淆失敗");
+  } finally {
+    isRunning = false;
+    obfuscateBtn.disabled = false;
   }
 });
 
@@ -173,9 +288,9 @@ downloadBtn.addEventListener("click", () => {
 });
 
 resetBtn.addEventListener("click", () => {
-  if (worker) {
-    worker.terminate();
-    worker = null;
+  if (isRunning) {
+    showToast("正在處理中，請等完成");
+    return;
   }
 
   selectedFile = null;
