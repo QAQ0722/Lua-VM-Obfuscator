@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lua VM 混淆器</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 
 <body>
@@ -13,67 +13,90 @@
       <div>
         <h1>Lua VM 混淆器</h1>
         <p>
-          把 Lua 程式轉成 VM Loader 混淆版本。輸出不使用 Lua 二進位 bytecode，
-          比較不容易因不同設備或不同 Lua 版本翻譯出錯。
+          這版改成「導入 Lua 檔案 → 混淆 → 下載結果」，不再把超長程式碼顯示在網頁上，避免瀏覽器卡住。
         </p>
       </div>
 
-      <div class="badge">Lua VM Obfuscator</div>
+      <div class="badge">File Mode</div>
     </section>
 
     <section class="content">
-      <div class="grid">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>原始 Lua</h2>
-            <button class="ghost-btn" id="sampleBtn">放入範例</button>
+      <section class="upload-card">
+        <h2>導入 Lua 檔案</h2>
+        <p>選擇 <code>.lua</code> 或 <code>.txt</code> 檔案，系統會在背景執行混淆。</p>
+
+        <label class="file-box" for="fileInput">
+          <div class="file-icon">📄</div>
+          <div>
+            <strong id="fileName">點這裡選擇 Lua 檔案</strong>
+            <span id="fileInfo">尚未選擇檔案</span>
+          </div>
+        </label>
+
+        <input id="fileInput" type="file" accept=".lua,.txt,text/plain" />
+
+        <div class="button-row">
+          <button id="obfuscateBtn" disabled>開始 VM 混淆</button>
+          <button class="soft-btn" id="downloadBtn" disabled>下載混淆結果</button>
+          <button class="ghost-btn" id="resetBtn">重設</button>
+        </div>
+      </section>
+
+      <section class="status-card">
+        <div class="status-head">
+          <h2>狀態</h2>
+          <span id="statusText">等待導入檔案</span>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <span>原始大小</span>
+            <strong id="inputSize">0 KB</strong>
           </div>
 
-          <textarea id="inputLua" spellcheck="false" placeholder="把你的 Lua 程式貼到這裡"></textarea>
+          <div class="stat">
+            <span>輸出大小</span>
+            <strong id="outputSize">0 KB</strong>
+          </div>
 
-          <div class="button-row">
-            <button id="obfuscateBtn">開始 VM 混淆</button>
-            <button class="ghost-btn" id="clearBtn">清空</button>
+          <div class="stat">
+            <span>處理方式</span>
+            <strong>背景 Worker</strong>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h2>混淆結果</h2>
-            <span id="statusText">等待輸入</span>
-          </div>
-
-          <textarea id="outputLua" spellcheck="false" readonly placeholder="混淆後的 Lua 會出現在這裡"></textarea>
-
-          <div class="button-row">
-            <button id="copyBtn">複製結果</button>
-            <button class="soft-btn" id="downloadBtn">下載 .lua</button>
-          </div>
+        <div class="preview-box">
+          <h3>輸出預覽</h3>
+          <pre id="previewText">混淆完成後，這裡只會顯示前面一小段預覽，完整內容請用下載。</pre>
         </div>
-      </div>
+      </section>
 
       <section class="info-grid">
         <div class="info-box">
-          <h3>這版比較穩的原因</h3>
+          <h3>為什麼比較不會當？</h3>
           <p>
-            不用 <code>string.dump</code>、不用 bytecode、不要 <code>bit32</code>、
-            不用 <code>utf8</code>。原始碼會先轉成 UTF-8 bytes，再變成 VM 數字指令。
+            舊版會把超長混淆結果塞進文字框，瀏覽器容易卡住。
+            這版只建立下載檔案，畫面只顯示小段預覽。
           </p>
         </div>
 
         <div class="info-box">
-          <h3>限制</h3>
+          <h3>執行限制</h3>
           <p>
-            執行環境需要支援 <code>loadstring</code> 或 <code>load</code>。
-            如果平台完全禁用動態載入，這種混淆就不能執行。
+            混淆後的 Lua 還是需要目標環境支援 <code>loadstring</code> 或 <code>load</code>。
+            如果平台完全禁止動態載入，就不能執行。
           </p>
         </div>
       </section>
     </section>
   </main>
 
-  <div class="toast" id="toast">已複製</div>
+  <div class="toast" id="toast">完成</div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

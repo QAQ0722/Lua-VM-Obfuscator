@@ -24,7 +24,7 @@ body {
 
 .container {
   width: 100%;
-  max-width: 1180px;
+  max-width: 980px;
   margin: 0 auto;
   background: var(--card);
   border-radius: 26px;
@@ -68,60 +68,78 @@ body {
   padding: 30px 34px 36px;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-
-.panel {
+.upload-card,
+.status-card {
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
+  border-radius: 22px;
+  padding: 22px;
   background: white;
 }
 
-.panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+.status-card {
+  margin-top: 18px;
 }
 
-.panel-head h2 {
+.upload-card h2,
+.status-card h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: 23px;
 }
 
-.panel-head span {
+.upload-card p {
+  margin: 10px 0 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #111827;
+}
+
+#fileInput {
+  display: none;
+}
+
+.file-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.file-box:hover {
+  border-color: #111827;
+  background: #f3f4f6;
+}
+
+.file-icon {
+  font-size: 34px;
+}
+
+.file-box strong {
+  display: block;
+  font-size: 18px;
+}
+
+.file-box span {
+  display: block;
+  margin-top: 6px;
   color: var(--muted);
   font-size: 14px;
-}
-
-textarea {
-  width: 100%;
-  min-height: 430px;
-  resize: vertical;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
-  font-size: 15px;
-  line-height: 1.55;
-  outline: none;
-  font-family: Consolas, Monaco, "Courier New", monospace;
-  background: #fbfbfc;
-}
-
-textarea:focus {
-  border-color: var(--dark);
-  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.13);
 }
 
 .button-row {
   display: flex;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 16px;
   flex-wrap: wrap;
 }
 
@@ -140,6 +158,11 @@ button:hover {
   opacity: 0.9;
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .soft-btn {
   background: #374151;
 }
@@ -148,6 +171,86 @@ button:hover {
   background: #f3f4f6;
   color: #111827;
   border: 1px solid var(--line);
+}
+
+.status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.status-head span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.progress-wrap {
+  width: 100%;
+  height: 14px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 18px;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: #111827;
+  border-radius: 999px;
+  transition: width 0.18s ease;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.stat {
+  background: var(--soft);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 18px;
+}
+
+.preview-box {
+  margin-top: 18px;
+  background: #0b1020;
+  color: #d1d5db;
+  border-radius: 18px;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.preview-box h3 {
+  margin: 0 0 12px;
+  color: white;
+  font-size: 17px;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  font-family: Consolas, Monaco, "Courier New", monospace;
 }
 
 .info-grid {
@@ -176,13 +279,6 @@ button:hover {
   font-size: 14px;
 }
 
-code {
-  background: white;
-  padding: 2px 6px;
-  border-radius: 6px;
-  color: #111827;
-}
-
 .toast {
   position: fixed;
   left: 50%;
@@ -204,7 +300,7 @@ code {
   transform: translateX(-50%) translateY(0);
 }
 
-@media (max-width: 850px) {
+@media (max-width: 760px) {
   body {
     padding: 12px;
   }
@@ -222,15 +318,6 @@ code {
     padding: 22px;
   }
 
-  .grid,
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  textarea {
-    min-height: 300px;
-  }
-
   .button-row {
     flex-direction: column;
   }
@@ -239,7 +326,12 @@ code {
     width: 100%;
   }
 
-  .panel-head {
+  .stats-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-head {
     align-items: flex-start;
     flex-direction: column;
   }

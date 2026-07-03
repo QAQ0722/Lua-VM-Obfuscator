@@ -1,28 +1,34 @@
-Lua VM 混淆器網頁版
+Lua VM 混淆器：檔案導入下載版
 
 資料夾內容：
 - index.html
 - style.css
 - script.js
+- worker.js
 - README.txt
 
+這版改動：
+- 不再把原始 Lua 和完整混淆結果放在大文字框。
+- 使用「選擇檔案」導入 Lua。
+- 使用 Web Worker 在背景混淆，避免主畫面卡死。
+- 混淆完成後用下載方式取得 .lua。
+- 頁面只顯示前 2500 字元預覽。
+
 使用方式：
-1. 直接打開 index.html。
-2. 把 Lua 程式貼進左邊。
+1. 打開 index.html。
+2. 選擇 .lua 或 .txt 檔案。
 3. 按「開始 VM 混淆」。
-4. 複製或下載右邊結果。
+4. 完成後按「下載混淆結果」。
 
 GitHub Pages：
-把這 4 個檔案上傳到 repository 根目錄即可。
+請把這 5 個檔案全部上傳到 repository 根目錄：
+- index.html
+- style.css
+- script.js
+- worker.js
+- README.txt
 
-特色：
-- 不使用 Lua 二進位 bytecode。
-- 不使用 string.dump。
-- 不使用 bit32。
-- 不使用 utf8 library。
-- 使用 UTF-8 bytes 轉 VM 數字指令。
-- 輸出 Lua 只使用基本 table / string.char / table.concat / loadstring 或 load。
-
-限制：
-執行混淆後的 Lua 時，目標環境必須支援 loadstring 或 load。
-如果平台完全禁用 loadstring/load，這種 Loader 型混淆不能執行。
+注意：
+- 因為這版用了 worker.js，GitHub 上一定要一起上傳 worker.js。
+- 開網站後如果不是新版，請 Ctrl + F5，或網址後面加 ?v=4。
+- 混淆後的 Lua 仍需要目標環境支援 loadstring 或 load。
